@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="zh-TW" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>數獨遊戲</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .sudoku-cell {
+      transition: all 0.2s ease;
+    }
+    
+    .sudoku-cell:hover:not(.fixed-cell) {
+      transform: scale(1.05);
+    }
+    
+    .sudoku-cell.selected {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
+    
+    .sudoku-cell.error {
+      animation: shake 0.3s ease;
+    }
+    
+    .sudoku-cell.success {
+      animation: pulse 0.5s ease;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    .number-button {
+      transition: all 0.15s ease;
+    }
+    
+    .number-button:hover {
+      transform: translateY(-2px);
+    }
+    
+    .number-button:active {
+      transform: translateY(0);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app" class="w-full h-full flex items-center justify-center p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;"><!-- Decorative Bows -->
+   <svg class="bow-decoration" style="position: absolute; top: 5%; left: 5%; width: 80px; height: 80px; opacity: 0.3; transform: rotate(-15deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#ffd700" stroke="#ffed4e" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#ffd700" /> <rect x="45" y="50" width="10" height="30" fill="#ffd700" rx="2" />
+   </svg>
+   <svg class="bow-decoration" style="position: absolute; top: 15%; right: 8%; width: 60px; height: 60px; opacity: 0.25; transform: rotate(25deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#ff69b4" stroke="#ff8fd5" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#ff69b4" /> <rect x="45" y="50" width="10" height="30" fill="#ff69b4" rx="2" />
+   </svg>
+   <svg class="bow-decoration" style="position: absolute; bottom: 10%; left: 10%; width: 70px; height: 70px; opacity: 0.3; transform: rotate(10deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#87ceeb" stroke="#b0e0f6" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#87ceeb" /> <rect x="45" y="50" width="10" height="30" fill="#87ceeb" rx="2" />
+   </svg>
+   <svg class="bow-decoration" style="position: absolute; bottom: 20%; right: 12%; width: 65px; height: 65px; opacity: 0.28; transform: rotate(-20deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#ffd700" stroke="#ffed4e" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#ffd700" /> <rect x="45" y="50" width="10" height="30" fill="#ffd700" rx="2" />
+   </svg>
+   <svg class="bow-decoration" style="position: absolute; top: 50%; right: 3%; width: 55px; height: 55px; opacity: 0.22; transform: rotate(45deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#ff69b4" stroke="#ff8fd5" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#ff69b4" /> <rect x="45" y="50" width="10" height="30" fill="#ff69b4" rx="2" />
+   </svg>
+   <svg class="bow-decoration" style="position: absolute; top: 40%; left: 2%; width: 58px; height: 58px; opacity: 0.26; transform: rotate(-30deg);" viewbox="0 0 100 100"><path d="M30,50 Q20,30 10,40 Q5,50 10,60 Q20,70 30,50 M70,50 Q80,30 90,40 Q95,50 90,60 Q80,70 70,50" fill="#87ceeb" stroke="#b0e0f6" stroke-width="2" /> <circle cx="50" cy="50" r="8" fill="#87ceeb" /> <rect x="45" y="50" width="10" height="30" fill="#87ceeb" rx="2" />
+   </svg><!-- Christmas Decorations --> <!-- Snowflakes -->
+   <div style="position: absolute; top: 8%; left: 15%; font-size: 40px; opacity: 0.4; animation: float 6s ease-in-out infinite;">
+    ❄️
+   </div>
+   <div style="position: absolute; top: 25%; right: 15%; font-size: 35px; opacity: 0.35; animation: float 7s ease-in-out infinite 1s;">
+    ❄️
+   </div>
+   <div style="position: absolute; bottom: 15%; left: 20%; font-size: 38px; opacity: 0.38; animation: float 8s ease-in-out infinite 2s;">
+    ❄️
+   </div>
+   <div style="position: absolute; bottom: 30%; right: 18%; font-size: 32px; opacity: 0.32; animation: float 6.5s ease-in-out infinite 1.5s;">
+    ❄️
+   </div>
+   <div style="position: absolute; top: 60%; left: 8%; font-size: 36px; opacity: 0.36; animation: float 7.5s ease-in-out infinite 0.5s;">
+    ❄️
+   </div><!-- Christmas Trees -->
+   <div style="position: absolute; top: 12%; left: 25%; font-size: 45px; opacity: 0.35; transform: rotate(-10deg);">
+    🎄
+   </div>
+   <div style="position: absolute; bottom: 12%; right: 22%; font-size: 42px; opacity: 0.32; transform: rotate(8deg);">
+    🎄
+   </div><!-- Santa & Gifts -->
+   <div style="position: absolute; top: 35%; right: 10%; font-size: 38px; opacity: 0.28; transform: rotate(-8deg);">
+    🎅
+   </div>
+   <div style="position: absolute; bottom: 35%; left: 12%; font-size: 36px; opacity: 0.3; transform: rotate(12deg);">
+    🎁
+   </div><!-- Christmas Ornaments -->
+   <div style="position: absolute; top: 70%; right: 8%; font-size: 32px; opacity: 0.35;">
+    🔴
+   </div>
+   <div style="position: absolute; top: 22%; left: 35%; font-size: 28px; opacity: 0.3;">
+    🔵
+   </div>
+   <style>
+      @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(10deg); }
+      }
+    </style>
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full" style="position: relative; z-index: 1;"><!-- Header -->
+    <div class="text-center mb-6">
+     <div class="flex items-center justify-between mb-4">
+      <h1 id="game-title" class="text-4xl font-bold flex-1" style="color: #667eea;">數獨遊戲</h1><button id="theme-toggle" class="w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110" style="background: #667eea;" title="切換深色模式"> <span id="theme-icon" class="text-2xl">🌙</span> </button>
+     </div>
+     <div class="flex items-center justify-center gap-4 mb-4"><label for="difficulty" id="difficulty-label" class="text-lg font-medium text-gray-700">難度:</label> <select id="difficulty" class="px-4 py-2 border-2 border-purple-300 rounded-lg text-gray-700 font-medium focus:outline-none focus:border-purple-500"> <option value="easy">簡單</option> <option value="medium" selected>中等</option> <option value="hard">困難</option> </select>
+     </div>
+     <div class="flex gap-3 justify-center"><button id="new-game-btn" class="px-6 py-2 rounded-lg font-semibold text-white transition-all hover:shadow-lg" style="background: #667eea;">新遊戲</button> <button id="check-btn" class="px-6 py-2 rounded-lg font-semibold text-white transition-all hover:shadow-lg" style="background: #48bb78;">檢查答案</button> <button id="hint-btn" class="px-6 py-2 rounded-lg font-semibold text-white transition-all hover:shadow-lg" style="background: #ed8936;">提示</button>
+     </div>
+    </div><!-- Sudoku Grid -->
+    <div id="sudoku-grid" class="mb-6 mx-auto" style="width: fit-content;"><!-- Grid will be generated by JavaScript -->
+    </div><!-- Number Input Panel -->
+    <div class="flex justify-center gap-2 mb-4"><button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="1">1</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="2">2</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="3">3</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="4">4</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="5">5</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="6">6</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="7">7</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="8">8</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #667eea;" data-number="9">9</button> <button class="number-button w-12 h-12 rounded-lg font-bold text-xl text-white" style="background: #e53e3e;" data-number="0">✕</button>
+    </div><!-- Message Area -->
+    <div id="message" class="text-center text-lg font-semibold h-8"></div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      game_title: "數獨遊戲",
+      difficulty_label: "難度:",
+      new_game_button: "新遊戲",
+      check_button: "檢查答案",
+      hint_button: "提示",
+      background_color: "#667eea",
+      surface_color: "#ffffff",
+      text_color: "#1a202c",
+      primary_action_color: "#667eea",
+      secondary_action_color: "#48bb78",
+      font_family: "system-ui",
+      font_size: 16
+    };
+
+    let puzzle = [];
+    let solution = [];
+    let selectedCell = null;
+    let isDarkMode = false;
+
+    function generateSudoku(difficulty) {
+      // Generate a complete valid sudoku solution
+      const board = Array(9).fill(0).map(() => Array(9).fill(0));
+      fillBoard(board);
+      solution = board.map(row => [...row]);
+      
+      // Remove numbers based on difficulty
+      const cellsToRemove = difficulty === 'easy' ? 35 : difficulty === 'medium' ? 45 : 55;
+      puzzle = board.map(row => [...row]);
+      
+      let removed = 0;
+      while (removed < cellsToRemove) {
+        const row = Math.floor(Math.random() * 9);
+        const col = Math.floor(Math.random() * 9);
+        if (puzzle[row][col] !== 0) {
+          puzzle[row][col] = 0;
+          removed++;
+        }
+      }
+    }
+
+    function fillBoard(board) {
+      const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      return solve(board, numbers);
+    }
+
+    function solve(board, numbers) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            const shuffled = [...numbers].sort(() => Math.random() - 0.5);
+            for (let num of shuffled) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                if (solve(board, numbers)) return true;
+                board[row][col] = 0;
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function isValid(board, row, col, num) {
+      // Check row
+      for (let x = 0; x < 9; x++) {
+        if (board[row][x] === num) return false;
+      }
+      
+      // Check column
+      for (let x = 0; x < 9; x++) {
+        if (board[x][col] === num) return false;
+      }
+      
+      // Check 3x3 box
+      const startRow = row - row % 3;
+      const startCol = col - col % 3;
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (board[i + startRow][j + startCol] === num) return false;
+        }
+      }
+      
+      return true;
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('sudoku-grid');
+      grid.innerHTML = '';
+      
+      const table = document.createElement('div');
+      table.className = 'inline-block border-4 border-gray-800 rounded-lg overflow-hidden';
+      
+      for (let i = 0; i < 9; i++) {
+        const row = document.createElement('div');
+        row.className = 'flex';
+        
+        for (let j = 0; j < 9; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'sudoku-cell w-12 h-12 flex items-center justify-center font-bold text-xl cursor-pointer';
+          cell.style.borderRight = (j % 3 === 2 && j !== 8) ? '3px solid #2d3748' : '1px solid #cbd5e0';
+          cell.style.borderBottom = (i % 3 === 2 && i !== 8) ? '3px solid #2d3748' : '1px solid #cbd5e0';
+          
+          const isFixed = puzzle[i][j] !== 0;
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          
+          if (isFixed) {
+            cell.textContent = puzzle[i][j];
+            cell.classList.add('fixed-cell');
+            if (isDarkMode) {
+              cell.style.background = '#4a5568';
+              cell.style.color = '#e2e8f0';
+            } else {
+              cell.style.background = '#e2e8f0';
+              cell.style.color = '#2d3748';
+            }
+          } else {
+            if (isDarkMode) {
+              cell.style.background = '#1a202c';
+              cell.style.color = '#90cdf4';
+            } else {
+              cell.style.background = '#ffffff';
+              cell.style.color = window.elementSdk?.config?.primary_action_color || defaultConfig.primary_action_color;
+            }
+            cell.addEventListener('click', () => selectCell(cell, i, j));
+          }
+          
+          row.appendChild(cell);
+        }
+        
+        table.appendChild(row);
+      }
+      
+      grid.appendChild(table);
+    }
+
+    function selectCell(cell, row, col) {
+      if (selectedCell) {
+        selectedCell.classList.remove('selected');
+      }
+      selectedCell = cell;
+      cell.classList.add('selected');
+    }
+
+    function setNumber(num) {
+      if (!selectedCell) return;
+      
+      const row = parseInt(selectedCell.dataset.row);
+      const col = parseInt(selectedCell.dataset.col);
+      
+      if (num === 0) {
+        puzzle[row][col] = 0;
+        selectedCell.textContent = '';
+      } else {
+        puzzle[row][col] = num;
+        selectedCell.textContent = num;
+        // Keep the color visible
+        if (isDarkMode) {
+          selectedCell.style.color = '#90cdf4';
+        } else {
+          const config = window.elementSdk?.config || defaultConfig;
+          selectedCell.style.color = config.primary_action_color || defaultConfig.primary_action_color;
+        }
+      }
+      
+      showMessage('');
+    }
+
+    function checkSolution() {
+      let correct = true;
+      let filled = true;
+      
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          if (puzzle[i][j] === 0) {
+            filled = false;
+          } else if (puzzle[i][j] !== solution[i][j]) {
+            correct = false;
+          }
+        }
+      }
+      
+      if (!filled) {
+        showMessage('請完成所有格子！', '#ed8936');
+      } else if (correct) {
+        showMessage('🎉 恭喜答案正確！', '#48bb78');
+        document.querySelectorAll('.sudoku-cell:not(.fixed-cell)').forEach(cell => {
+          cell.classList.add('success');
+        });
+        setTimeout(() => showCongratulations(), 500);
+      } else {
+        showMessage('❌ 答案有誤，請再試試！', '#e53e3e');
+        document.querySelectorAll('.sudoku-cell:not(.fixed-cell)').forEach(cell => {
+          const row = parseInt(cell.dataset.row);
+          const col = parseInt(cell.dataset.col);
+          if (puzzle[row][col] !== 0 && puzzle[row][col] !== solution[row][col]) {
+            cell.classList.add('error');
+            setTimeout(() => cell.classList.remove('error'), 300);
+          }
+        });
+      }
+    }
+
+    function giveHint() {
+      const emptyCells = [];
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          if (puzzle[i][j] === 0) {
+            emptyCells.push([i, j]);
+          }
+        }
+      }
+      
+      if (emptyCells.length === 0) {
+        showMessage('沒有空格需要提示了！', '#ed8936');
+        return;
+      }
+      
+      const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      puzzle[row][col] = solution[row][col];
+      
+      renderGrid();
+      showMessage('💡 已填入一個提示！', '#48bb78');
+    }
+
+    function showMessage(text, color = '#2d3748') {
+      const message = document.getElementById('message');
+      message.textContent = text;
+      message.style.color = color;
+    }
+
+    function showCongratulations() {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+      `;
+      
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 48px;
+        border-radius: 24px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: scaleIn 0.4s ease;
+        max-width: 90%;
+      `;
+      
+      modal.innerHTML = `
+        <div style="font-size: 80px; margin-bottom: 20px; animation: bounce 1s ease infinite;">🎊</div>
+        <h2 style="color: #fff; font-size: 48px; font-weight: bold; margin-bottom: 16px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+          恭喜通關！
+        </h2>
+        <p style="color: #e2e8f0; font-size: 24px; margin-bottom: 32px;">
+          你成功完成了這個數獨挑戰！🎉
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button id="close-modal-btn" style="
+            background: #fff;
+            color: #667eea;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          ">太棒了！</button>
+          <button id="new-game-modal-btn" style="
+            background: #48bb78;
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          ">再玩一次</button>
+        </div>
+      `;
+      
+      // Add animations
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.8); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        #close-modal-btn:hover, #new-game-modal-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+      `;
+      document.head.appendChild(style);
+      
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      
+      // Create confetti effect
+      createConfetti();
+      
+      // Close modal handler
+      document.getElementById('close-modal-btn').addEventListener('click', () => {
+        overlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => overlay.remove(), 300);
+      });
+      
+      document.getElementById('new-game-modal-btn').addEventListener('click', () => {
+        overlay.remove();
+        newGame();
+      });
+      
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => overlay.remove(), 300);
+        }
+      });
+      
+      const fadeOutStyle = document.createElement('style');
+      fadeOutStyle.textContent = `
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+      `;
+      document.head.appendChild(fadeOutStyle);
+    }
+
+    function createConfetti() {
+      const colors = ['#ffd700', '#ff69b4', '#87ceeb', '#90ee90', '#ffa500'];
+      const confettiCount = 50;
+      
+      for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.cssText = `
+          position: fixed;
+          width: 10px;
+          height: 10px;
+          background: ${colors[Math.floor(Math.random() * colors.length)]};
+          top: -10px;
+          left: ${Math.random() * 100}%;
+          opacity: 0.8;
+          animation: confettiFall ${2 + Math.random() * 3}s linear;
+          z-index: 999;
+          border-radius: 50%;
+        `;
+        
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 5000);
+      }
+      
+      const confettiStyle = document.createElement('style');
+      confettiStyle.textContent = `
+        @keyframes confettiFall {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(confettiStyle);
+    }
+
+    function newGame() {
+      const difficulty = document.getElementById('difficulty').value;
+      generateSudoku(difficulty);
+      renderGrid();
+      selectedCell = null;
+      showMessage('');
+    }
+
+    async function onConfigChange(config) {
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      document.getElementById('game-title').textContent = config.game_title || defaultConfig.game_title;
+      document.getElementById('game-title').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('game-title').style.fontSize = `${baseSize * 2}px`;
+      document.getElementById('game-title').style.color = config.text_color || defaultConfig.text_color;
+      
+      document.getElementById('difficulty-label').textContent = config.difficulty_label || defaultConfig.difficulty_label;
+      document.getElementById('difficulty-label').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('difficulty-label').style.fontSize = `${baseSize * 1.125}px`;
+      document.getElementById('difficulty-label').style.color = config.text_color || defaultConfig.text_color;
+      
+      document.getElementById('new-game-btn').textContent = config.new_game_button || defaultConfig.new_game_button;
+      document.getElementById('new-game-btn').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('new-game-btn').style.fontSize = `${baseSize}px`;
+      document.getElementById('new-game-btn').style.background = config.primary_action_color || defaultConfig.primary_action_color;
+      
+      document.getElementById('check-btn').textContent = config.check_button || defaultConfig.check_button;
+      document.getElementById('check-btn').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('check-btn').style.fontSize = `${baseSize}px`;
+      document.getElementById('check-btn').style.background = config.secondary_action_color || defaultConfig.secondary_action_color;
+      
+      document.getElementById('hint-btn').textContent = config.hint_button || defaultConfig.hint_button;
+      document.getElementById('hint-btn').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('hint-btn').style.fontSize = `${baseSize}px`;
+      document.getElementById('hint-btn').style.background = '#ed8936';
+      
+      document.getElementById('app').style.background = `linear-gradient(135deg, ${config.background_color || defaultConfig.background_color} 0%, #764ba2 100%)`;
+      document.querySelector('.bg-white').style.background = config.surface_color || defaultConfig.surface_color;
+      
+      document.querySelectorAll('.number-button').forEach(btn => {
+        btn.style.fontFamily = `${customFont}, ${baseFontStack}`;
+        btn.style.fontSize = `${baseSize * 1.25}px`;
+        if (btn.dataset.number !== '0') {
+          btn.style.background = config.primary_action_color || defaultConfig.primary_action_color;
+        }
+      });
+      
+      renderGrid();
+    }
+
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      const themeIcon = document.getElementById('theme-icon');
+      themeIcon.textContent = isDarkMode ? '☀️' : '🌙';
+      
+      if (isDarkMode) {
+        document.getElementById('app').style.background = 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)';
+        document.querySelector('.bg-white').style.background = '#2d3748';
+        document.querySelector('.bg-white').style.color = '#f7fafc';
+        
+        document.getElementById('game-title').style.color = '#90cdf4';
+        document.getElementById('difficulty-label').style.color = '#e2e8f0';
+        document.getElementById('difficulty').style.background = '#4a5568';
+        document.getElementById('difficulty').style.color = '#f7fafc';
+        document.getElementById('difficulty').style.borderColor = '#4a5568';
+        
+        document.querySelectorAll('.sudoku-cell.fixed-cell').forEach(cell => {
+          cell.style.background = '#4a5568';
+          cell.style.color = '#e2e8f0';
+        });
+        
+        document.querySelectorAll('.sudoku-cell:not(.fixed-cell)').forEach(cell => {
+          cell.style.background = '#1a202c';
+          cell.style.color = '#90cdf4';
+        });
+        
+        document.getElementById('message').style.color = '#e2e8f0';
+      } else {
+        const config = window.elementSdk?.config || defaultConfig;
+        document.getElementById('app').style.background = `linear-gradient(135deg, ${config.background_color} 0%, #764ba2 100%)`;
+        document.querySelector('.bg-white').style.background = config.surface_color;
+        document.querySelector('.bg-white').style.color = '';
+        
+        document.getElementById('game-title').style.color = config.text_color;
+        document.getElementById('difficulty-label').style.color = config.text_color;
+        document.getElementById('difficulty').style.background = '';
+        document.getElementById('difficulty').style.color = '#374151';
+        document.getElementById('difficulty').style.borderColor = '#d8b4fe';
+        
+        document.querySelectorAll('.sudoku-cell.fixed-cell').forEach(cell => {
+          cell.style.background = '#e2e8f0';
+          cell.style.color = '#2d3748';
+        });
+        
+        document.querySelectorAll('.sudoku-cell:not(.fixed-cell)').forEach(cell => {
+          cell.style.background = '#ffffff';
+          cell.style.color = config.primary_action_color;
+        });
+        
+        document.getElementById('message').style.color = '#2d3748';
+      }
+    }
+
+    // Event listeners
+    document.getElementById('new-game-btn').addEventListener('click', newGame);
+    document.getElementById('check-btn').addEventListener('click', checkSolution);
+    document.getElementById('hint-btn').addEventListener('click', giveHint);
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    
+    document.querySelectorAll('.number-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const num = parseInt(btn.dataset.number);
+        setNumber(num);
+      });
+    });
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '9') {
+        setNumber(parseInt(e.key));
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        setNumber(0);
+      }
+    });
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                config.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.primary_action_color || defaultConfig.primary_action_color,
+              set: (value) => {
+                config.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (value) => {
+                config.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ['game_title', config.game_title || defaultConfig.game_title],
+          ['difficulty_label', config.difficulty_label || defaultConfig.difficulty_label],
+          ['new_game_button', config.new_game_button || defaultConfig.new_game_button],
+          ['check_button', config.check_button || defaultConfig.check_button],
+          ['hint_button', config.hint_button || defaultConfig.hint_button]
+        ])
+      });
+    }
+
+    // Initialize game
+    newGame();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9aeb26bfa681c4ed',t:'MTc2NTg1NjM0My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
